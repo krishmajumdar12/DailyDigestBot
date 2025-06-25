@@ -4,9 +4,15 @@ from sendgrid.helpers.mail import Mail, TrackingSettings, ClickTracking
 from dotenv import load_dotenv
 import certifi
 import requests
+from datetime import datetime, timedelta
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+import pytz
 
 load_dotenv()
 os.environ['SSL_CERT_FILE'] = certifi.where()
+SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
 # Use SendGrid API to send daily digest email
 def send_email(subject, content):
@@ -110,6 +116,61 @@ def get_stocks_data():
 
     return result
 
+# Use ZenQuotes API for daily quote
+def get_daily_quote():
+    try:
+        res = requests.get("https://zenquotes.io/api/today")
+        data = res.json()
+        quote = data[0]["q"]
+        author = data[0]["a"]
+        return f"Quote of the Day:\n\"{quote}\"\n– {author}"
+    except Exception as e:
+        return f"Error retrieving key: {e}"
+
+# Using Google Calendar API to get daily events
+def get_calendar_events():
+    credentials = None
+    if os.path.exists('token.json'):
+        credentials = Credentials.from_authorized_user_file('token.json', SCOPES)
+
+    if not credentials or not credentials.valid:
+        if credentials and credentials.expired and credentials.refresh_token:
+            credentials.refresh()
+        else:
+            credentials_file = os.getenv("GOOGLE_CREDENTIALS_FILE", "credentials.json")
+            flow = InstalledAppFlow.from_client_secrets_file(credentials_file, SCOPES)
+            credentials = flow.run_local_server(port=0)
+        with open('token.json', 'w') as token:
+            token.write(credentials.to_json())
+
+    service = build('calendar', 'v3', credentials=credentials)
+    pacific = pytz.timezone("America/Los_Angeles")
+    now = datetime.now(pacific).isoformat()
+    end_of_day = (datetime.now(pacific) + timedelta(days=1)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    ).isoformat()
+    events_result = service.events().list(
+        calendarId='primary',
+        timeMin=now,
+        timeMax=end_of_day,
+        maxResults=10,
+        singleEvents=True,
+        orderBy='startTime'
+    ).execute()
+
+    events = events_result.get('items', [])
+
+    if not events:
+        return "No events today."
+
+    result = "Today’s Events:\n"
+    for event in events:
+        start = event['start'].get('dateTime', event['start'].get('date'))
+        start_time = datetime.fromisoformat(start).strftime("%I:%M %p")
+        result += f"- {start_time}: {event['summary']}\n"
+
+    return result
+
 # Testing
 if __name__ == "__main__":
-    send_email("Daily Digest", get_stocks_data())
+    send_email("Daily Digest", get_calendar_events())
