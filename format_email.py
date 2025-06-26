@@ -423,7 +423,7 @@ def format_html_email(weather, news, stocks, quote, calendar):
     """
     
     # Weather Section
-    if "error" not in weather:
+    if weather and "error" not in weather:
         weather_emoji = get_weather_icon(weather.get("icon", ""), weather.get("conditions", ""))
         html += f"""
             <div class="section">
@@ -440,7 +440,7 @@ def format_html_email(weather, news, stocks, quote, calendar):
                 <div class="weather-summary">{weather['summary']}</div>
             </div>
         """
-    else:
+    elif weather and "error" in weather:
         html += f"""
             <div class="section">
                 <div class="section-title">
@@ -452,7 +452,7 @@ def format_html_email(weather, news, stocks, quote, calendar):
         """
     
     # Calendar Section
-    if calendar["events"]:
+    if calendar and calendar["events"]:
         html += """
             <div class="section">
                 <div class="section-title">
@@ -468,7 +468,7 @@ def format_html_email(weather, news, stocks, quote, calendar):
                 </div>
             """
         html += "</div>"
-    else:
+    elif calendar:
         html += """
             <div class="section">
                 <div class="section-title">
@@ -480,7 +480,7 @@ def format_html_email(weather, news, stocks, quote, calendar):
         """
     
     # Stocks Section
-    if stocks["stocks"]:
+    if stocks and stocks["stocks"]:
         html += """
             <div class="section">
                 <div class="section-title">
@@ -510,7 +510,7 @@ def format_html_email(weather, news, stocks, quote, calendar):
         html += "</div>"
     
     # News Section
-    if news["articles"]:
+    if news and news["articles"]:
         html += """
             <div class="section">
                 <div class="section-title">
@@ -542,7 +542,7 @@ def format_html_email(weather, news, stocks, quote, calendar):
                 </div>
             """
         html += "</div>"
-    else:
+    elif news:
         error_msg = news.get("error", "No news articles found.")
         html += f"""
             <div class="section">
@@ -555,7 +555,7 @@ def format_html_email(weather, news, stocks, quote, calendar):
         """
     
     # Quote Section
-    if "error" not in quote:
+    if quote and "error" not in quote:
         html += f"""
             <div class="section quote-section">
                 <div class="section-title">
@@ -566,7 +566,7 @@ def format_html_email(weather, news, stocks, quote, calendar):
                 <div class="quote-author">– {quote['author']}</div>
             </div>
         """
-    else:
+    elif quote and "error" in  quote:
         html += f"""
             <div class="section">
                 <div class="section-title">
@@ -596,7 +596,7 @@ def format_plain_text_email(weather, news, stocks, quote, calendar):
                     """
     
     # Weather
-    if "error" not in weather:
+    if weather and "error" not in weather:
         weather_emoji = get_weather_icon(weather.get("icon", ""), weather.get("conditions", ""))
         content += f"""
                     {weather_emoji} WEATHER IN {weather['city'].upper()}
@@ -606,7 +606,7 @@ def format_plain_text_email(weather, news, stocks, quote, calendar):
                     {weather['summary']}
 
                     """
-    else:
+    elif weather and "error" in weather:
         content += f"""
                     🌤️ WEATHER
                     {weather['error']}
@@ -615,16 +615,16 @@ def format_plain_text_email(weather, news, stocks, quote, calendar):
     
     # Calendar
     content += "📅 TODAY'S EVENTS\n"
-    if calendar["events"]:
+    if calendar and calendar["events"]:
         for event in calendar["events"]:
             content += f"- {event['time']}: {event['title']}\n"
-    else:
+    elif calendar:
         content += "No events scheduled for today.\n"
     content += "\n"
     
     # Stocks
     content += "📈 STOCK PRICES\n"
-    if stocks["stocks"]:
+    if stocks and stocks["stocks"]:
         for stock in stocks["stocks"]:
             if "error" not in stock:
                 arrow = "⬆️" if stock["change"] > 0 else "⬇️" if stock["change"] < 0 else "⏸"
@@ -635,19 +635,19 @@ def format_plain_text_email(weather, news, stocks, quote, calendar):
     
     # News
     content += "📰 TOP NEWS HEADLINES\n"
-    if news["articles"]:
+    if news and news["articles"]:
         for article in news["articles"]:
             content += f"- {article['title']}\n  ({article['url']})\n"
-    else:
+    elif news:
         error_msg = news.get("error", "No news articles found.")
         content += f"{error_msg}\n"
     content += "\n"
     
     # Quote
     content += "💭 QUOTE OF THE DAY\n"
-    if "error" not in quote:
+    if quote and "error" not in quote:
         content += f'"{quote["quote"]}"\n– {quote["author"]}\n'
-    else:
+    elif quote and "error" in  quote:
         content += f"{quote['error']}\n"
     
     return content

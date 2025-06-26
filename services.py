@@ -11,7 +11,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 import pytz
 
-load_dotenv()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 os.environ['SSL_CERT_FILE'] = certifi.where()
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
@@ -43,8 +44,8 @@ def send_email(subject, plain_content, html_content=None):
 
 # Use VisualCrossing API to get daily weather info
 def get_weather_data():
-    key = os.getenv("WEATHER_API_KEY")
-    city = os.getenv("CITY")
+    key = os.getenv("WEATHER_API_KEY", "")
+    city = os.getenv("CITY", "")
     city_url = city.replace(" ", "%20")
     request_url = (
         f"https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/"
@@ -79,7 +80,7 @@ def get_weather_data():
     
 # Using GNews API to get daily news headlines with images
 def get_news_headlines():
-    key = os.getenv("GNEWS_API_KEY")
+    key = os.getenv("GNEWS_API_KEY", "")
     topic = os.getenv("NEWS_TOPIC", "") # Optionally adjust topic
     max_headlines = int(os.getenv("NUM_HEADLINES", 3)) # Optionally adjust how many headlines appear
 
@@ -117,8 +118,8 @@ def get_news_headlines():
  
 # Using Finnhub API to get daily stock info with company logos
 def get_stocks_data():
-    key = os.getenv("FINNHUB_API_KEY")
-    stocks = os.getenv("STOCK_SYMBOLS", "DOW").split(",")
+    key = os.getenv("FINNHUB_API_KEY", "")
+    stocks = os.getenv("STOCK_SYMBOLS", "NVDA").split(",")
     stock_data = []
 
     for stock in stocks:
