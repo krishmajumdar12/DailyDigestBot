@@ -77,7 +77,7 @@ def get_weather_data():
     except Exception as e:
         return {"error": f"Error retrieving weather data: {e}"}
     
-# Using GNews API to get daily news headlines
+# Using GNews API to get daily news headlines with images
 def get_news_headlines():
     key = os.getenv("GNEWS_API_KEY")
     topic = os.getenv("NEWS_TOPIC", "") # Optionally adjust topic
@@ -93,17 +93,29 @@ def get_news_headlines():
 
     try:
         res = requests.get(request_url)
-        articles = res.json().get("articles", [])
+        articles_data = res.json().get("articles", [])
 
-        if not articles:
+        if not articles_data:
             return {"articles": [], "error": "No news articles found."}
+
+        articles = []
+        for article in articles_data:
+            processed_article = {
+                "title": article.get("title", ""),
+                "url": article.get("url", ""),
+                "image": article.get("image", ""),
+                "description": article.get("description", ""),
+                "source": article.get("source", {}).get("name", "Unknown Source"),
+                "publishedAt": article.get("publishedAt", "")
+            }
+            articles.append(processed_article)
 
         return {"articles": articles}
     
     except Exception as e:
         return {"articles": [], "error": f"Error retrieving news: {e}"}
  
-# Using Finnhub API to get daily stock info
+# Using Finnhub API to get daily stock info with company logos
 def get_stocks_data():
     key = os.getenv("FINNHUB_API_KEY")
     stocks = os.getenv("STOCK_SYMBOLS", "DOW").split(",")
@@ -111,29 +123,42 @@ def get_stocks_data():
 
     for stock in stocks:
         try:
-            request_url = f"https://finnhub.io/api/v1/quote?symbol={stock.strip()}&token={key}"
-            res = requests.get(request_url)
-            data = res.json()
-            current = data.get("c") # current price
-            change = data.get("d") # price change
-            pct = data.get("dp") # percent change
+            # Get stock quote data
+            quote_url = f"https://finnhub.io/api/v1/quote?symbol={stock.strip()}&token={key}"
+            quote_res = requests.get(quote_url)
+            quote_data = quote_res.json()
+            
+            current = quote_data.get("c") # current price
+            change = quote_data.get("d") # price change
+            pct = quote_data.get("dp") # percent change
+
+            # Get company profile for logo
+            profile_url = f"https://finnhub.io/api/v1/stock/profile2?symbol={stock.strip()}&token={key}"
+            profile_res = requests.get(profile_url)
+            profile_data = profile_res.json()
+            
+            logo_url = profile_data.get("logo", "")
 
             if current:
                 stock_data.append({
                     "symbol": stock.strip(),
                     "price": current,
                     "change": change,
-                    "percent_change": pct
+                    "percent_change": pct,
+                    "logo": logo_url
                 })
             else:
                 stock_data.append({
                     "symbol": stock.strip(),
-                    "error": "Data not available"
+                    "logo": logo_url,
+                    "error": "Price data not available"
                 })
 
         except Exception as e:
             stock_data.append({
                 "symbol": stock.strip(),
+                "company_name": stock.strip(),
+                "logo": "",
                 "error": f"Error retrieving data: {e}"
             })
 
@@ -199,7 +224,7 @@ def get_calendar_events():
 
 def get_weather_icon(icon, conditions):
     # Get weather icon based on icon or conditions
-    weather_emojis = {
+    weather_icons = {
         "clear-day": "☀️",
         "clear-night": "🌙",
         "rain": "🌧️",
@@ -213,8 +238,8 @@ def get_weather_icon(icon, conditions):
     }
     
     # Try icon first, then fallback to conditions
-    if icon in weather_emojis:
-        return weather_emojis[icon]
+    if icon in weather_icons:
+        return weather_icons[icon]
     
     conditions_lower = conditions.lower()
     if "clear" in conditions_lower:
@@ -229,3 +254,23 @@ def get_weather_icon(icon, conditions):
         return "🌫️"
     else:
         return "🌤️"
+
+# Helper function to validate image URLs
+def is_valid_image_url(url):
+    # Check if URL is valid and likely an image
+    if not url:
+        return False
+    
+    # Basic URL validation
+    if not url.startswith(('http://', 'https://')):
+        return False
+    
+    # Check for common image extensions
+    image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg')
+    url_lower = url.lower()
+    
+    # Either has image extension or is from known image hosting services
+    has_image_extension = any(url_lower.endswith(ext) for ext in image_extensions)
+    is_image_service = any(service in url_lower for service in ['imgur', 'cloudinary', 'amazonaws', 'googleusercontent'])
+    
+    return has_image_extension or is_image_service

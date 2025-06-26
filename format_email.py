@@ -253,7 +253,24 @@ def format_html_email(weather, news, stocks, quote, calendar):
                 transition: all 0.3s ease;
                 position: relative;
                 overflow: hidden;
+                display: flex;
+                gap: 20px;
+                align-items: flex-start;
             }}
+
+            .news-image {{
+                width: 120px;
+                height: 80px;
+                object-fit: cover;
+                border-radius: 4px;
+                flex-shrink: 0;
+                margin-right: 20px;
+            }}
+
+            .news-content {{
+                flex: 1;
+            }}
+
             .news-item::before {{
                 content: '';
                 position: absolute;
@@ -502,11 +519,26 @@ def format_html_email(weather, news, stocks, quote, calendar):
                 </div>
         """
         for article in news["articles"]:
+            # Handle image with fallback
+            image_html = ""
+            # print(f"Image URL: {article.get('image')}")
+            if article.get('image') and article['image'].strip():
+                image_html = f'''<div class="news-image-container">
+                                    <img src="{article["image"]}" 
+                                        alt="Article image" 
+                                        class="news-image" 
+                                        loading="lazy"
+                                        onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=&quot;image-placeholder&quot;>📰</div>'">
+                                </div>'''
+            
             html += f"""
                 <div class="news-item">
-                    <a href="{article['url']}" class="news-title" target="_blank">
-                        {article['title']}
-                    </a>
+                    {image_html}
+                    <div class="news-content">
+                        <a href="{article['url']}" class="news-title" target="_blank">
+                            {article['title']}
+                        </a>
+                    </div>
                 </div>
             """
         html += "</div>"
