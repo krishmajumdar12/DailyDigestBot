@@ -81,6 +81,8 @@ STOCK_SYMBOLS="NVDA,AAPL,GOOG,TSLA,AMZN"
 GOOGLE_CREDENTIALS_FILE=credentials.json
 ```
 
+Note: You can comment out API key lines for services you opt out of by setting their corresponding `INCLUDE_` variable to `False`, as the API keys won’t be needed in that case.
+
 ### How to Get API Keys for Each Service
 
 - **SendGrid:**  
